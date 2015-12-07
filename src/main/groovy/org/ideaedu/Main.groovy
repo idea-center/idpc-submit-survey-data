@@ -1,10 +1,20 @@
 package org.ideaedu
 
-import idea.data.rest.*
+import idea.data.rest.RESTCourse
+import idea.data.rest.RESTForm
+import idea.data.rest.RESTRespondent
+import idea.data.rest.RESTSurvey
+import idea.data.rest.RESTResponse
+import idea.data.rest.RESTQuestion
+import idea.data.rest.RESTQuestionGroup
+
 import java.util.*
+
 import groovyx.net.http.RESTClient
 import groovyx.net.http.ContentType
+
 import groovy.json.JsonBuilder
+
 import java.util.Random
 
 /**
@@ -22,10 +32,11 @@ import java.util.Random
  * <li>a (app) - the client application name</li>
  * <li>k (key) - the client application key</li>
  * <li>t (type) - the type of survey to submit (chair, admin, or diag)</li>
+ * <li>s (ssl) - use SSL/TLS for connection to the IDEA REST Server</li>
  * <li>? (help) - show the usage of this</li>
  * </ul>
  *
- * @author Todd Wallentine todd AT theideacenter org
+ * @author Todd Wallentine todd AT IDEAedu org
  */
 public class Main {
 
@@ -43,11 +54,15 @@ public class Main {
 	private static final int ADMIN_RATER_FORM_ID = 18
 	private static final int CHAIR_INFO_FORM_ID = 13
 	private static final int CHAIR_RATER_FORM_ID = 14
+    private static final int TEACHING_INFO_FORM_ID = 19
+    private static final int TEACHING_RATER_FORM_ID = 20
 	private static final Integer DISCIPLINE_CODE = new Integer(1107)
 	private static final String PROGRAM_CODE = "11.0701"
 	private static final def DEFAULT_AUTH_HEADERS = [ "X-IDEA-APPNAME": "", "X-IDEA-KEY": "" ]
 	private static final def DEFAULT_TYPE = "diag"
+    private static final def DEFAULT_PROTOCOL = "http"
 
+    private static def protocol = DEFAULT_PROTOCOL
 	private static String hostname = DEFAULT_HOSTNAME
 	private static int port = DEFAULT_PORT
 	private static String basePath = DEFAULT_BASE_PATH
@@ -67,13 +82,13 @@ public class Main {
 
 		/*
 		 * TODO Other command line options that might be useful:
-		 * 1) survey type (chair, admin, short, ...) - currently hard-coded to diagnostic
-		 * 2) data file - contents define the answers to info form and rater form questions
-		 * 3) year, term, start/end date, gap analysis flag
+		 * 1) data file - contents define the answers to info form and rater form questions
+		 * 2) year, term, start/end date, gap analysis flag
 		 */
-		def cli = new CliBuilder( usage: 'Main -v -h host -p port -b basePath -sid srcID -sgid srcGroupID -iid instID -a "TestClient" -k "ABCDEFG123456"' )
+		def cli = new CliBuilder( usage: 'Main -v -s -h host -p port -b basePath -sid srcID -sgid srcGroupID -iid instID -a "TestClient" -k "ABCDEFG123456" -t "diag"' )
 		cli.with {
 			v longOpt: 'verbose', 'verbose output'
+            s longOpt: 'ssl', 'use SSL (default: false)'
 			h longOpt: 'host', 'host name (default: localhost)', args:1
 			p longOpt: 'port', 'port number (default: 8091)', args:1
 			b longOpt: 'basePath', 'base REST path (default: IDEA-REST-SERVER/v1/', args:1
@@ -93,6 +108,9 @@ public class Main {
 		if(options.v) {
 			verboseOutput = true
 		}
+        if(options.s) {
+            protocol = "https"
+        }
 		if(options.h) {
 			hostname = options.h
 		}
@@ -126,6 +144,8 @@ public class Main {
 				type = "admin"
 			} else if("chair".equals(options.t)) {
 				type = "chair"
+            } else if("teaching".equals(options.t)) {
+                type = "teaching"
 			} else {
 				type = DEFAULT_TYPE
 			}
@@ -158,15 +178,18 @@ public class Main {
 		} else if(type == "chair") {
 			infoFormID = CHAIR_INFO_FORM_ID
 			raterFormID = CHAIR_RATER_FORM_ID
+        } else if(type == "teaching") {
+            infoFormID = TEACHING_INFO_FORM_ID
+            raterFormID = TEACHING_RATER_FORM_ID
 		}
 
 		def restInfoForm = buildRESTInfoForm(infoFormStartDate, infoFormEndDate, infoFormID)
-		def restRaterForm = buildRESTRaterForm(raterFormStartDate, raterFormEndDate, 10, raterFormID)
 		def course
-		if((type == "diag") || (type == "short")) {
-			// course is only valid for Diagnostic and Short reports
+		if((type == "diag") || (type == "short") || (type == 'teaching')) {
 			course = buildRESTCourse()
 		}
+        def restRaterForm = buildRESTRaterForm(raterFormStartDate, raterFormEndDate, 10, raterFormID)
+
 		def restSurvey = new RESTSurvey(srcId: srcID, srcGroupId: srcGroupID, institutionId: institutionID,
 			year: year, term: term, includesGapAnalysis: includesGapAnalysis, creationDate: creationDate,
 			infoForm: restInfoForm, raterForm: restRaterForm, course: course)
@@ -237,6 +260,11 @@ public class Main {
 			disciplineCode = DISCIPLINE_CODE
 			programCode = PROGRAM_CODE
 			title = "Associate Professor"
+        } else if(infoFormID == TEACHING_INFO_FORM_ID) {
+            // this is a teaching essentials survey so we add in a discipline code and program code
+            disciplineCode = DISCIPLINE_CODE
+            programCode = PROGRAM_CODE
+            title = "Professor"
 		} else if(infoFormID == CHAIR_INFO_FORM_ID) {
 			title = "Chair"
 		} else if(infoFormID == ADMIN_INFO_FORM_ID) {
@@ -266,8 +294,8 @@ public class Main {
 	private static buildRESTResponses(questionGroups) {
 		def responses = [] as Set
 
-		questionGroups.each() { questionGroup ->
-			questionGroup.questions.each() { question ->
+		questionGroups?.each { questionGroup ->
+			questionGroup.questions?.each() { question ->
 				def answer = getRandomAnswer(question, questionGroup)
 				def response = new RESTResponse(groupType: "standard", questionId: question.id, answer: answer)
 				responses.add(response)
@@ -293,10 +321,10 @@ public class Main {
 		def answer
 
 		// Priority is given to question response options. If not defined, use the question group response options.
-		if(question.responseOptions != null && question.responseOptions.size > 0) {
+		if(question.responseOptions) {
 			def index = random.nextInt(question.responseOptions.size)
 			answer = question.responseOptions[index].value
-		} else if(questionGroup.responseOptions != null && questionGroup.responseOptions.size > 0) {
+		} else if(questionGroup.responseOptions) {
 			def index = random.nextInt(questionGroup.responseOptions.size)
 			answer = questionGroup.responseOptions[index].value
 		} else {
@@ -317,8 +345,12 @@ public class Main {
 		def questionGroups = []
 
 		def client = getRESTClient()
-		if(verboseOutput) println "Retrieving questions for form ${formID}..."
-		def r = client.get(path: "${basePath}/forms/${formID}/questions", headers: authHeaders)
+		if(verboseOutput) {
+            println "Retrieving questions for form ${formID}..."
+        }
+		def r = client.get(
+                path: "${basePath}/forms/${formID}/questions",
+                headers: authHeaders)
 
 		r.data.data.each { qg ->
 			// TODO Is there a better way to convert it from the Map (qg) to RESTQuestionGroup? -todd 11Jun2013
@@ -328,7 +360,9 @@ public class Main {
 			questionGroups.add(restQG)
 		}
 
-		if(verboseOutput) println "Retrieved ${questionGroups.size} question groups for form ${formID}."
+		if(verboseOutput) {
+            println "Retrieved ${questionGroups.size} question groups for form ${formID}."
+        }
 
 		return questionGroups
 	}
@@ -341,17 +375,26 @@ public class Main {
 	private static submitSurveyData(restSurvey) {
 
 		def json = restSurvey.toJSON()
-		if(verboseOutput) println "JSON: ${json}"
+		if(verboseOutput) {
+            println "JSON: ${json}"
+        }
 		def client = getRESTClient()
 		try {
+            def startTime = new Date().time
+
 			def response = client.post(
 				path: "${basePath}/services/survey",
 				body: json,
 				requestContentType: ContentType.JSON,
 				headers: authHeaders)
 
-			if(verboseOutput) println "Status: ${response.status}"
-			println response.data
+            def endTime = new Date().time
+            def runTime = endTime - startTime
+
+			if(verboseOutput) {
+                println "Status: ${response.status}"
+            }
+			println "${response.data} -> ${runTime}ms"
 		} catch (ex) {
 			println "Caught an exception while submitting the survey data:"
 			println "Status: ${ex.response.status}"
@@ -368,9 +411,18 @@ public class Main {
 	 */
 	private static getRESTClient() {
 		if(restClient == null) {
-			if(verboseOutput) println "REST requests will be sent to ${hostname} on port ${port}"
-			restClient = new RESTClient("http://${hostname}:${port}/")
+			if(verboseOutput) {
+                println "REST requests will be sent to ${hostname} on port ${port} (protocol: ${protocol}"
+            }
+			restClient = new RESTClient("${protocol}://${hostname}:${port}/")
+            restClient.handler.failure = { response ->
+                if(verboseOutput) {
+                    println "The REST call failed: ${response.status}"
+                }
+                return response
+            }
 		}
+
 		return restClient
 	}
 }
