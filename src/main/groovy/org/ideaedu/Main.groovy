@@ -50,7 +50,7 @@ public class Main {
         DIAGNOSTIC_2016('Diagnostic 2016', ['diag16'], 21, 22, true),
         LEARNING_ESSENTIALS('Learning Essentials', ['learn', 'learning'], 21, 23, true),
         TEACHING_ESSENTIALS('Teaching Essentials', ['teach', 'teaching'], 19, 20, true),
-        ADMIN('Admininstrator', ['admin'], 16, 17, false),
+        ADMIN('Admininstrator', ['admin'], 17, 18, false),
         CHAIR('Chair', [], 13, 14, false)
 
         def name
