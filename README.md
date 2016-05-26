@@ -59,8 +59,8 @@ b     | basePath         | No       | IDEA-REST-SERVER/v1 | The path on the host
 sid   | srcID            | No       | 1                   | The source survey ID.
 sgid  | srcGroupID       | No       | 2                   | The source group ID.
 iid   | institutionID    | No       | 3019                | The institution ID the data is associated with.
-a     | app              | No       | None                | The application to connect as (credentials).
-k     | key              | No       | None                | The key to use (credentials).
+a     | app              | Yes      | None                | The application to connect as (credentials).
+k     | key              | Yes      | None                | The key to use (credentials).
 t     | type             | No       | Diagnostic          | The type of survey to submit data for. This can be any valid type (diag, Diagnostic, Short, Diagnostic 2016, diag16, Learning Essentials, learn, learning, Teaching Essentials, teach, teaching, Administrator, admin, Chair).
 d     | discipline       | No       | 5120                | The discipline the data is associated with.
 es    | extraScaled      | No       | 0                   | The number of extra scaled questions to add (and answer).
