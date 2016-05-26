@@ -20,7 +20,7 @@ the following:
 * [Git](http://git-scm.com/downloads)
 * [Java (version 6+)](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 * [Groovy](http://groovy-lang.org/)
-* [Gradle](http://gradle.org/installation) (or use [GVM](http://gvmtool.net/) to install Gradle)
+* [Gradle](http://gradle.org/installation) (or use [SDKMAN](http://sdkman.io/) to install Gradle)
 * Libraries Used
   * [HTTP Client Framework for Groovy](http://mvnrepository.com/artifact/org.codehaus.groovy.modules.http-builder/http-builder)
   * [Apache Commons CLI](http://mvnrepository.com/artifact/commons-cli/commons-cli)
@@ -40,10 +40,10 @@ gradle installDist
 Once installed, you can run using the following.
 ```
 cd build/install/idpc-submit-survey-data/bin
-./idpc-submit-survey-data -a "TestClient" -k "ABCDEFG1234567890" -iid 1029 -h resthome.ideasystem.org -p 443 -s -sid 12345 -sgid 54321 -t teach -v
+./idpc-submit-survey-data -a "TestClient" -k "ABCDEFG1234567890" -iid 1029 -h reststage.ideasystem.org -p 80 -sid 12345 -sgid 54321 -t teach -v
 ```
 This will generate random answers for the Teaching Essentials survey (-t) and submit it to the Data Portal that is hosted on
-resthome.ideasystem.org (-h, -p, and -s) using the given Data Portal credentials (-a and -k). It will associate the data with the
+reststage.ideasystem.org (-h, and -p) using the given Data Portal credentials (-a and -k). It will associate the data with the
 given institution (-iid) and use the given a source survey ID and source group ID (-sid and -sdig). It will provide verbose output (-v)
 so you can see what data is pulled down (question IDs) and what data is submitted.
 
@@ -61,7 +61,7 @@ sgid  | srcGroupID       | No       | 2                   | The source group ID.
 iid   | institutionID    | No       | 3019                | The institution ID the data is associated with.
 a     | app              | No       | None                | The application to connect as (credentials).
 k     | key              | No       | None                | The key to use (credentials).
-t     | type             | No       | Diagnostic          | The type of survey to submit data for. This can be any valid type including Diagnostic 2016, Learning Essentials, and Teaching Essentials.
+t     | type             | No       | Diagnostic          | The type of survey to submit data for. This can be any valid type (diag, Diagnostic, Short, Diagnostic 2016, diag16, Learning Essentials, learn, learning, Teaching Essentials, teach, teaching, Administrator, admin, Chair).
 d     | discipline       | No       | 5120                | The discipline the data is associated with.
 es    | extraScaled      | No       | 0                   | The number of extra scaled questions to add (and answer).
 eo    | extraOpen        | No       | 0                   | The number of extra open questions to add (and answer).
