@@ -22,10 +22,10 @@ the following:
 * [Groovy](http://groovy-lang.org/)
 * [Gradle](http://gradle.org/installation) (or use [GVM](http://gvmtool.net/) to install Gradle)
 * Libraries Used
-** HTTP Client Framework for Groovy (org.codehaus.groovy.modules.http-builder:http-builder)
-** Apache Commons CLI (commons-cli:commons-cli)
-** Google GSON (com.google.code.gson:gson)
-** IDEA REST Models (org.ideaedu:rest-models)
+  * [HTTP Client Framework for Groovy](http://mvnrepository.com/artifact/org.codehaus.groovy.modules.http-builder/http-builder)
+  * [Apache Commons CLI](http://mvnrepository.com/artifact/commons-cli/commons-cli)
+  * [Google GSON](http://mvnrepository.com/artifact/com.google.code.gson/gson)
+  * IDEA REST Models (org.ideaedu:rest-models)
 
 ## Installing
 
@@ -38,10 +38,10 @@ gradle installDist
 ## Running
 
 Once installed, you can run using the following.
-'''
+```
 cd build/install/idpc-submit-survey-data/bin
 ./idpc-submit-survey-data -a "TestClient" -k "ABCDEFG1234567890" -iid 1029 -h resthome.ideasystem.org -p 443 -s -sid 12345 -sgid 54321 -t teach -v
-'''
+```
 This will generate random answers for the Teaching Essentials survey (-t) and submit it to the Data Portal that is hosted on
 resthome.ideasystem.org (-h, -p, and -s) using the given Data Portal credentials (-a and -k). It will associate the data with the
 given institution (-iid) and use the given a source survey ID and source group ID (-sid and -sdig). It will provide verbose output (-v)
