@@ -2,12 +2,13 @@ package org.ideaedu
 
 import idea.data.rest.RESTCourse
 import idea.data.rest.RESTForm
-import idea.data.rest.RESTRespondent
-import idea.data.rest.RESTSurvey
-import idea.data.rest.RESTResponse
-import idea.data.rest.RESTResponseOption
 import idea.data.rest.RESTQuestion
 import idea.data.rest.RESTQuestionGroup
+import idea.data.rest.RESTResponse
+import idea.data.rest.RESTResponseOption
+import idea.data.rest.RESTRespondent
+import idea.data.rest.RESTSurvey
+import idea.data.rest.RESTSubGroup
 
 import java.util.*
 
@@ -37,6 +38,7 @@ import java.util.Random
  * <li>eo (extraOpen) - the number of extra open questions to add to the rater form.</li>
  * <li>es (extraScaled) - the number of extra scaled questions to add to the rater form.</li>
  * <li>d (discipline) - the discipline code this survey is associated with.</li>
+ * <li>de (demographics) - the number of demographic sub-groups to use (0, 2-4 are valid).</li>
  * <li>? (help) - show the usage of this</li>
  * </ul>
  *
@@ -93,6 +95,7 @@ public class Main {
     private static final String DEFAULT_PROGRAM_CODE = "51.2001"
     private static final int DEFAULT_EXTRA_SCALED_QUESTION_COUNT = 0
     private static final int DEFAULT_EXTRA_OPEN_QUESTION_COUNT = 0
+    private static final int DEFAULT_DEMOGRAPHIC_GROUP_COUNT = 0
 
     private static def protocol = DEFAULT_PROTOCOL
 	private static String hostname = DEFAULT_HOSTNAME
@@ -107,6 +110,7 @@ public class Main {
     private static def programCode = DEFAULT_PROGRAM_CODE
     private static def extraScaledQuestionCount = DEFAULT_EXTRA_SCALED_QUESTION_COUNT
     private static def extraOpenQuestionCount = DEFAULT_EXTRA_OPEN_QUESTION_COUNT
+    private static int demographicGroupCount = DEFAULT_DEMOGRAPHIC_GROUP_COUNT
 
 	private static boolean verboseOutput = false
 
@@ -135,6 +139,7 @@ public class Main {
 			k longOpt: 'key', 'client application key', args: 1
 			t longOpt: 'type', 'survey type', args: 1
             d longOpt: 'discipline', 'discipline code', args: 1
+            de longOpt: 'demographics', 'demographic groups', args: 1
             es longOpt: 'extraScaled', 'extra scaled questions', args: 1
             eo longOpt: 'extraOpen', 'extra open questions', args: 1
 			'?' longOpt: 'help', 'help'
@@ -180,6 +185,9 @@ public class Main {
         if(options.d) {
             disciplineCode = options.d.toInteger()
         }
+        if(options.de) {
+            demographicGroupCount = options.de.toInteger()
+        }
         if(options.es) {
             extraScaledQuestionCount = options.es.toInteger()
         }
@@ -204,16 +212,22 @@ public class Main {
 
         def programCode = getProgramCode(disciplineCode)
 
+        def demographicGroups = getDemographicGroups(demographicGroupCount)
+        def demographicGroupIDs
+        if(demographicGroups) {
+            demographicGroupIDs = demographicGroups.collect { it.id }
+        }
+
 		def restInfoForm = buildRESTInfoForm(infoFormStartDate, infoFormEndDate, type, disciplineCode, programCode)
 		def course
 		if(type.isSRI) {
 			course = buildRESTCourse()
 		}
-        def restRaterForm = buildRESTRaterForm(raterFormStartDate, raterFormEndDate, 10, raterFormID, extraScaledQuestionCount, extraOpenQuestionCount)
+        def restRaterForm = buildRESTRaterForm(raterFormStartDate, raterFormEndDate, 10, raterFormID, extraScaledQuestionCount, extraOpenQuestionCount, demographicGroups)
 
 		def restSurvey = new RESTSurvey(srcId: srcID, srcGroupId: srcGroupID, institutionId: institutionID,
 			year: year, term: term, includesGapAnalysis: includesGapAnalysis, creationDate: creationDate,
-			infoForm: restInfoForm, raterForm: restRaterForm, course: course)
+			infoForm: restInfoForm, raterForm: restRaterForm, course: course, demographicGroupIds: demographicGroupIDs)
 
 		submitSurveyData(restSurvey)
 	}
@@ -240,7 +254,8 @@ public class Main {
 	 * @return RESTForm A new RESTForm instance that is populated with test data.
 	 */
 	private static buildRESTRaterForm(startDate, endDate, numberAsked, raterFormID,
-        extraScaled=DEFAULT_EXTRA_SCALED_QUESTION_COUNT, extraOpen=DEFAULT_EXTRA_OPEN_QUESTION_COUNT) {
+        extraScaled=DEFAULT_EXTRA_SCALED_QUESTION_COUNT, extraOpen=DEFAULT_EXTRA_OPEN_QUESTION_COUNT,
+        demographicGroups) {
 
 		def questionGroups = getQuestionGroups(raterFormID)
 
@@ -253,6 +268,7 @@ public class Main {
 		for(int i = 0; i < numberAsked; i++) {
 			def rater = new RESTRespondent()
 			rater.setType("rater")
+            rater.subGroup = selectDemographicGroup(demographicGroups)
 			def responses = buildRESTResponses(questionGroups, extraQuestionGroups)
 			rater.setResponses(responses)
 			respondents.add(rater)
@@ -261,6 +277,25 @@ public class Main {
 
 		return restRaterForm
 	}
+
+    /**
+     * Select a demographic group, at random, from the list of demographic groups provided.
+     * This might return null (when no demographic groups given).
+     *
+     * @param demographicGroups The list of demographic groups to select from.
+     * @return A random demographic group (RESTSubGroup) from the list provided; might be null.
+     */
+    private static selectDemographicGroup(demographicGroups) {
+        def demographicGroup
+
+        if(demographicGroups) {
+            def random = new Random()
+            def i = random.nextInt(demographicGroups.size())
+            demographicGroup = demographicGroups[i]
+        }
+
+        return demographicGroup
+    }
 
     /**
      * Build a list of extra question groups that can be added to a form.
@@ -476,6 +511,42 @@ public class Main {
         }
 
         return programCode
+    }
+
+    private static getDemographicGroups(count) {
+        def demographicGroups = []
+
+        if(count > 0) {
+            // Get the demographic groups from the API
+            // Randomly select from the group to fill up the demographic groups with the count specified
+            def client = getRESTClient()
+            if(verboseOutput) {
+                println "Retrieving ${count} demographic groups ..."
+            }
+
+            // Get all demographic subgroups from the API
+            def r = client.get(
+                path: "${basePath}/demographic_groups",
+                headers: authHeaders)
+            def subGroups = []
+            r?.data?.data.each { it ->
+                def jsonBuilder = new JsonBuilder(it)
+                def json = jsonBuilder.toString()
+                subGroups << RESTSubGroup.fromJSON(json)
+            }
+
+            // Select some of them at random
+            for(int numSelected = 0; numSelected < count; numSelected++) {
+                def i = random.nextInt(subGroups.size())
+                demographicGroups << subGroups[i]
+            }
+
+            if(verboseOutput) {
+                println "Got ${subGroups.size()} demographic groups and selected ${count} of them for use."
+            }
+        }
+
+        return demographicGroups
     }
 
 	/**
