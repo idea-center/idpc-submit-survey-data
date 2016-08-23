@@ -96,6 +96,7 @@ public class Main {
     private static final int DEFAULT_EXTRA_SCALED_QUESTION_COUNT = 0
     private static final int DEFAULT_EXTRA_OPEN_QUESTION_COUNT = 0
     private static final int DEFAULT_DEMOGRAPHIC_GROUP_COUNT = 0
+    private static final int DEFAULT_NUMBER_OF_RESPONDENTS = 10
 
     private static def protocol = DEFAULT_PROTOCOL
 	private static String hostname = DEFAULT_HOSTNAME
@@ -111,6 +112,7 @@ public class Main {
     private static def extraScaledQuestionCount = DEFAULT_EXTRA_SCALED_QUESTION_COUNT
     private static def extraOpenQuestionCount = DEFAULT_EXTRA_OPEN_QUESTION_COUNT
     private static int demographicGroupCount = DEFAULT_DEMOGRAPHIC_GROUP_COUNT
+    private static int numberOfRespondents = DEFAULT_NUMBER_OF_RESPONDENTS
 
 	private static boolean verboseOutput = false
 
@@ -139,6 +141,7 @@ public class Main {
 			k longOpt: 'key', 'client application key', args: 1
 			t longOpt: 'type', 'survey type', args: 1
             d longOpt: 'discipline', 'discipline code', args: 1
+            r longOpt: 'respondents', 'number of respondents to simulate', args: 1
             de longOpt: 'demographics', 'demographic groups', args: 1
             es longOpt: 'extraScaled', 'extra scaled questions', args: 1
             eo longOpt: 'extraOpen', 'extra open questions', args: 1
@@ -185,6 +188,9 @@ public class Main {
         if(options.d) {
             disciplineCode = options.d.toInteger()
         }
+        if(options.r) {
+            numberOfRespondents = options.r.toInteger()
+        }
         if(options.de) {
             demographicGroupCount = options.de.toInteger()
         }
@@ -223,7 +229,8 @@ public class Main {
 		if(type.isSRI) {
 			course = buildRESTCourse()
 		}
-        def restRaterForm = buildRESTRaterForm(raterFormStartDate, raterFormEndDate, 10, raterFormID, extraScaledQuestionCount, extraOpenQuestionCount, demographicGroups)
+        def restRaterForm = buildRESTRaterForm(raterFormStartDate, raterFormEndDate, numberOfRespondents,
+          raterFormID, extraScaledQuestionCount, extraOpenQuestionCount, demographicGroups)
 
 		def restSurvey = new RESTSurvey(srcId: srcID, srcGroupId: srcGroupID, institutionId: institutionID,
 			year: year, term: term, includesGapAnalysis: includesGapAnalysis, creationDate: creationDate,
