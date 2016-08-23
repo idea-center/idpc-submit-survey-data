@@ -65,3 +65,5 @@ d     | discipline       | No       | 5120                | The discipline the d
 de    | demographics     | No       |                     | The number of demographic groups to select for use in the Administrator survey.
 es    | extraScaled      | No       | 0                   | The number of extra scaled questions to add (and answer).
 eo    | extraOpen        | No       | 0                   | The number of extra open questions to add (and answer).
+r     | num respondents  | No       | 10                  | The number of respondents to simulate.  Useful with -de (demographics) to make sure there are enough respondents in each demographic group.
+ 
