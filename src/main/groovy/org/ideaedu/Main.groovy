@@ -39,6 +39,8 @@ import java.util.Random
  * <li>es (extraScaled) - the number of extra scaled questions to add to the rater form.</li>
  * <li>d (discipline) - the discipline code this survey is associated with.</li>
  * <li>de (demographics) - the number of demographic sub-groups to use (0, 2-4 are valid).</li>
+ * <li>ras (asked) - the number of respondents asked to respond (defaults to 10).</li>
+ * <li>ran (answered) - the number of respondents that answered questions (defaults to 10).</li>
  * <li>? (help) - show the usage of this</li>
  * </ul>
  *
@@ -112,7 +114,8 @@ public class Main {
     private static def extraScaledQuestionCount = DEFAULT_EXTRA_SCALED_QUESTION_COUNT
     private static def extraOpenQuestionCount = DEFAULT_EXTRA_OPEN_QUESTION_COUNT
     private static int demographicGroupCount = DEFAULT_DEMOGRAPHIC_GROUP_COUNT
-    private static int numberOfRespondents = DEFAULT_NUMBER_OF_RESPONDENTS
+    private static int numAsked = DEFAULT_NUMBER_OF_RESPONDENTS
+    private static int numAnswered = DEFAULT_NUMBER_OF_RESPONDENTS
 
 	private static boolean verboseOutput = false
 
@@ -127,7 +130,7 @@ public class Main {
 		 * 1) data file - contents define the answers to info form and rater form questions
 		 * 2) year, term, start/end date, gap analysis flag
 		 */
-		def cli = new CliBuilder( usage: 'Main -v -s -h host -p port -b basePath -sid srcID -sgid srcGroupID -iid instID -a "TestClient" -k "ABCDEFG123456" -t "diag" -d 5120 -es 1 -eo 1' )
+		def cli = new CliBuilder( usage: 'Main -v -s -h host -p port -b basePath -sid srcID -sgid srcGroupID -iid instID -a "TestClient" -k "ABCDEFG123456" -t "diag" -d 5120 -es 1 -eo 1 -ras 10 -ran 9' )
 		cli.with {
 			v longOpt: 'verbose', 'verbose output'
             s longOpt: 'ssl', 'use SSL (default: false)'
@@ -141,7 +144,8 @@ public class Main {
 			k longOpt: 'key', 'client application key', args: 1
 			t longOpt: 'type', 'survey type', args: 1
             d longOpt: 'discipline', 'discipline code', args: 1
-            r longOpt: 'respondents', 'number of respondents to simulate', args: 1
+            ras longOpt: 'asked', 'number of respondents asked to respond', args: 1
+            ran longOpt: 'answered', 'number of respondents that responded', args: 1
             de longOpt: 'demographics', 'demographic groups', args: 1
             es longOpt: 'extraScaled', 'extra scaled questions', args: 1
             eo longOpt: 'extraOpen', 'extra open questions', args: 1
@@ -188,8 +192,12 @@ public class Main {
         if(options.d) {
             disciplineCode = options.d.toInteger()
         }
-        if(options.r) {
-            numberOfRespondents = options.r.toInteger()
+        if(options.ras) {
+            numAsked = options.ras.toInteger()
+            numAnswered = numAsked // default 100% response rate
+        }
+        if(options.ran) {
+            numAnswered = options.ran.toInteger()
         }
         if(options.de) {
             demographicGroupCount = options.de.toInteger()
@@ -229,7 +237,7 @@ public class Main {
 		if(type.isSRI) {
 			course = buildRESTCourse()
 		}
-        def restRaterForm = buildRESTRaterForm(raterFormStartDate, raterFormEndDate, numberOfRespondents,
+        def restRaterForm = buildRESTRaterForm(raterFormStartDate, raterFormEndDate, numAsked, numAnswered,
           raterFormID, extraScaledQuestionCount, extraOpenQuestionCount, demographicGroups)
 
 		def restSurvey = new RESTSurvey(srcId: srcID, srcGroupId: srcGroupID, institutionId: institutionID,
@@ -256,11 +264,12 @@ public class Main {
 	 * @param Date startDate The date that this rater form will open.
 	 * @param Date endDate The date that this rater form will close.
 	 * @param int numberAsked The number of respondents that are asked to respond to this survey.
+     * @param int numberAnswered The number of respondents that answered questions in this survey.
 	 * @param raterFormID The ID of the rater/response form.
      * @param extraScaled The number of extra scaled questions to create (default is 0).
 	 * @return RESTForm A new RESTForm instance that is populated with test data.
 	 */
-	private static buildRESTRaterForm(startDate, endDate, numberAsked, raterFormID,
+	private static buildRESTRaterForm(startDate, endDate, numberAsked, numberAnswered, raterFormID,
         extraScaled=DEFAULT_EXTRA_SCALED_QUESTION_COUNT, extraOpen=DEFAULT_EXTRA_OPEN_QUESTION_COUNT,
         demographicGroups) {
 
@@ -272,12 +281,12 @@ public class Main {
             restRaterForm.customQuestionGroups = extraQuestionGroups
         }
 		def respondents = [] as Set
-		for(int i = 0; i < numberAsked; i++) {
-			def rater = new RESTRespondent()
-			rater.setType("rater")
+		for(int i = 0; i < numberAnswered; i++) {
+            def rater = new RESTRespondent()
+            rater.setType("rater")
             rater.subGroup = selectDemographicGroup(demographicGroups)
-			def responses = buildRESTResponses(questionGroups, extraQuestionGroups)
-			rater.setResponses(responses)
+   		    def responses = buildRESTResponses(questionGroups, extraQuestionGroups)
+		    rater.setResponses(responses)
 			respondents.add(rater)
 		}
 		restRaterForm.setRespondents(respondents)
