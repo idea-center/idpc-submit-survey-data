@@ -613,6 +613,7 @@ public class Main {
                 println "REST requests will be sent to ${hostname} on port ${port} (protocol: ${protocol})"
             }
 			restClient = new RESTClient("${protocol}://${hostname}:${port}/")
+            restClient.ignoreSSLIssues()
             restClient.handler.failure = { response ->
                 if(verboseOutput) {
                     println "The REST call failed: ${response.status}"
