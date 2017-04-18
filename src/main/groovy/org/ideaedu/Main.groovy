@@ -253,7 +253,7 @@ public class Main {
 	 * @return A new RESTCourse that can be used in a RESTSurvey.
 	 */
 	private static buildRESTCourse() {
-		def restCourse = new RESTCourse(title: 'Intro to IDEA', number: 'IDEA 101', localCode: '0 234 67', time: 'MTWUF', days: '08:00')
+		def restCourse = new RESTCourse(title: 'Intro to IDEA', number: 'IDEA 101', localCode: '0 234 67', days: 'MTWUF', time: '08:00')
 		return restCourse
 	}
 
@@ -420,16 +420,20 @@ public class Main {
 		questionGroups?.each { questionGroup ->
 			questionGroup.questions?.each() { question ->
 				def answer = getRandomAnswer(question, questionGroup)
-				def response = new RESTResponse(groupType: 'standard', questionId: question.id, answer: answer)
-				responses.add(response)
+                if(answer != null) {
+				    def response = new RESTResponse(groupType: 'standard', questionId: question.id, answer: answer)
+                    responses.add(response)
+                }
 			}
 		}
 
         customQuestionGroups?.each { questionGroup ->
             questionGroup.questions?.each() { question ->
                 def answer = getRandomAnswer(question, questionGroup)
-                def response = new RESTResponse(groupType: 'custom', groupNumber: questionGroup.number, questionNumber: question.number, answer: answer)
-                responses.add(response)
+                if(answer != null) {
+                    def response = new RESTResponse(groupType: 'custom', groupNumber: questionGroup.number, questionNumber: question.number, answer: answer)
+                    responses.add(response)
+                }
             }
         }
 
@@ -446,24 +450,52 @@ public class Main {
 	 *
 	 * @param RESTQuestion question The question to create the answer for.
 	 * @param RESTQuestionGroup questionGroup The question group this question is associated with.
-	 * @return An answer to the question.
+	 * @return An answer to the question; this might be null.
 	 */
 	private static getRandomAnswer(question, questionGroup) {
 		def answer
 
 		// Priority is given to question response options. If not defined, use the question group response options.
 		if(question.responseOptions) {
-			def index = random.nextInt(question.responseOptions.size)
-			answer = question.responseOptions[index].value
+            answer = getValue(question.responseOptions)
 		} else if(questionGroup.responseOptions) {
-			def index = random.nextInt(questionGroup.responseOptions.size)
-			answer = questionGroup.responseOptions[index].value
+            answer = getValue(questionGroup.responseOptions)
 		} else {
 			answer = "Test Answer ${random.nextInt()}"
 		}
 
 		return answer
 	}
+
+    /**
+     * Get a random answer from the given response options. In some cases, we will return null to signal
+     * that no response should be provided.
+     *
+     * @param responseOptions The possible response option to choose form.
+     * @return The response option value; or null if no response is selected.
+     */
+    private static getValue(responseOptions) {
+        def value
+
+        if(responseOptions) {
+            def index = random.nextInt(responseOptions.size)
+            if(index > 0) {
+                value = responseOptions[index].value
+            } else if(responseOptions[index].isExcluded && random.nextBoolean()) {
+                // The 0:Blank response option was selected - sometimes, we provide it and sometimes we don't
+                value = responseOptions[index].value
+                if(verboseOutput) {
+                    println "The response option is 0:Blank:Excluded and we randomly chose to provide response value."
+                }
+            } else {
+                if(verboseOutput) {
+                    println "The response option is 0:Blank:Excluded and we randomly chose to provide NO response value."
+                }
+            }
+        }
+
+        return value
+    }
 
 	/**
 	 * Get the List of RESTQuestionGroup instances that are associated with the given formID. This will query the
