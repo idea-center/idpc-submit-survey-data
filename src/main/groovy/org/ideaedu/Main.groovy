@@ -324,6 +324,7 @@ public class Main {
         def extraQuestionGroups = []
 
         def qGroupNum = 1000
+        def qNum = 1000
         if(extraScaled) {
             def responseOptions = [
                 new RESTResponseOption(value: 1, description: 'One', abbreviation: '1', isExcluded: false),
@@ -336,12 +337,13 @@ public class Main {
                 message: 'Please answer these questions',
                 responseOptions: responseOptions,
                 questions: [])
-            for(int i = 1; i <= extraScaled; i++) {
+            for(int i = qNum; i < (extraScaled + qNum); i++) {
                 scaledQuestionGroup.questions << new RESTQuestion(type: 'scaled', number: i, text: "Scaled Question ${i}")
             }
 
             extraQuestionGroups << scaledQuestionGroup
             qGroupNum++
+            qNum += extraScaled
         }
 
         if(extraOpen) {
@@ -350,7 +352,7 @@ public class Main {
                 title: 'Extra Open Question Group',
                 message: 'Please answer these questions',
                 questions: [])
-            for(int i = 1; i <= extraOpen; i++) {
+            for(int i = qNum; i < (extraOpen + qNum); i++) {
                 openQuestionGroup.questions << new RESTQuestion(type: 'open', number: i, text: "Open Question ${i}")
             }
 
