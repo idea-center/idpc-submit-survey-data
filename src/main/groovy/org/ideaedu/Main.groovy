@@ -48,13 +48,13 @@ import java.util.Random
  */
 public class Main {
 
-    public enum SURVEY_TYPE {
+    private static enum SURVEY_TYPE {
         DIAGNOSTIC('Diagnostic', ['diag'], 1, 9, true),
         SHORT('Short', [], 1, 10, true),
         DIAGNOSTIC_2016('Diagnostic 2016', ['diag16'], 21, 22, true),
         LEARNING_ESSENTIALS('Learning Essentials', ['learn', 'learning'], 21, 23, true),
         TEACHING_ESSENTIALS('Teaching Essentials', ['teach', 'teaching'], 19, 20, true),
-        ADMIN('Admininstrator', ['admin'], 17, 18, false),
+        ADMIN('Administrator', ['admin'], 17, 18, false),
         CHAIR('Chair', [], 13, 14, false)
 
         def name
@@ -123,7 +123,7 @@ public class Main {
 
 	private static Random random = new Random() // TODO Should we seed it? -todd 11Jun2013
 
-	public static void main(String[] args) {
+	static void main(String[] args) {
 
 		/*
 		 * TODO Other command line options that might be useful:
