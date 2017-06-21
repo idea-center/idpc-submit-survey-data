@@ -1,6 +1,7 @@
 package org.ideaedu
 
 import idea.data.rest.RESTCourse
+import idea.data.rest.RESTSection
 import idea.data.rest.RESTForm
 import idea.data.rest.RESTQuestion
 import idea.data.rest.RESTQuestionGroup
@@ -256,11 +257,18 @@ public class Main {
 	 * @return A new RESTCourse that can be used in a RESTSurvey.
 	 */
 	private static buildRESTCourse(startDate, endDate) {
+        def section = buildRESTSection(startDate, endDate)
 		def restCourse = new RESTCourse(title: 'Intro to IDEA', number: 'IDEA 101', localCode: '0 234 67', days: 'MTWUF', time: '08:00',
-                                        srcId: 'courseSrcId', subject: 'subject', type: 'undergraduate', deliveryMode: 'face-to-face',
-										termType: 'semester', startDate: startDate, endDate: endDate)
+                                        srcId: 'courseSrcId', subject: 'course subject', type: 'undergraduate', deliveryMode: 'Face to Face',
+										termType: 'semester', startDate: startDate, endDate: endDate, section: section)
 		return restCourse
 	}
+
+    private static buildRESTSection(startDate, endDate) {
+        def restSection = new RESTSection(title: 'Intro to IDEA - Section I', number: 'IDEA 101 - Sec I', srcId: 'sectionSrcId', subject: 'section subject',
+                                          deliveryMode: 'Face to Face', startDate: startDate, endDate: endDate, localCode: '9 87 6 4', days: 'MWF', time: '09:00')
+        return restSection
+    }
 
 	/**
 	 * Build an instance of RESTForm that is a rater form that has the given number of respondents (numberAsked),
