@@ -400,7 +400,9 @@ public class Main {
 		def respondents = [] as Set
 		def firstName = 'Test'
 		def lastName = "Subject${random.nextInt()}"
-		def surveySubject = new RESTRespondent(type: 'subject', firstName: firstName, lastName: lastName, title: title)
+		def surveySubject = new RESTRespondent(type: 'subject', firstName: firstName, lastName: lastName, title: title,
+                                               srcId: 'srcId', email: 'test@ideaedu.org', sex: 'male', role: 'teaching assistant',
+                                               appointment: 'tenured', races: ['Hispanic', 'Asian'], employmentStatus: 'full-time' )
 		def responses = buildRESTResponses(questionGroups)
 		surveySubject.setResponses(responses)
 		respondents.add(surveySubject)
