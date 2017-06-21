@@ -10,6 +10,7 @@ import idea.data.rest.RESTRespondent
 import idea.data.rest.RESTSurvey
 import idea.data.rest.RESTSubGroup
 
+import org.joda.time.LocalDate
 import java.util.*
 
 import groovyx.net.http.RESTClient
@@ -220,6 +221,8 @@ public class Main {
 		Date infoFormEndDate = yesterday
 		Date raterFormStartDate = today - 5 // 5 days ago
 		Date raterFormEndDate = yesterday
+		Date courseStartDate = today - 60
+		Date courseEndDate = today -30
 
 		def infoFormID = type.infoFormID
 		def raterFormID = type.raterFormID
@@ -232,10 +235,10 @@ public class Main {
             demographicGroupIDs = demographicGroups.collect { it.id }
         }
 
-		def restInfoForm = buildRESTInfoForm(infoFormStartDate, infoFormEndDate, type, disciplineCode, programCode)
+		def restInfoForm = buildRESTInfoForm(infoFormStartDate, infoFormEndDate, type, type.isSRI? disciplineCode:null, type.isSRI? programCode:null)
 		def course
 		if(type.isSRI) {
-			course = buildRESTCourse()
+			course = buildRESTCourse(courseStartDate? new LocalDate(courseStartDate):null, courseEndDate? new LocalDate(courseEndDate):null)
 		}
         def restRaterForm = buildRESTRaterForm(raterFormStartDate, raterFormEndDate, numAsked, numAnswered,
           raterFormID, extraScaledQuestionCount, extraOpenQuestionCount, demographicGroups)
@@ -252,8 +255,10 @@ public class Main {
 	 *
 	 * @return A new RESTCourse that can be used in a RESTSurvey.
 	 */
-	private static buildRESTCourse() {
-		def restCourse = new RESTCourse(title: 'Intro to IDEA', number: 'IDEA 101', localCode: '0 234 67', days: 'MTWUF', time: '08:00')
+	private static buildRESTCourse(startDate, endDate) {
+		def restCourse = new RESTCourse(title: 'Intro to IDEA', number: 'IDEA 101', localCode: '0 234 67', days: 'MTWUF', time: '08:00',
+                                        srcId: 'courseSrcId', subject: 'subject', type: 'undergraduate', deliveryMode: 'face-to-face',
+										termType: 'semester', startDate: startDate, endDate: endDate)
 		return restCourse
 	}
 
