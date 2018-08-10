@@ -37,7 +37,7 @@ import java.util.Random
  * <li>k (key) - the client application key</li>
  * <li>t (type) - the type of survey to submit (chair, admin, or diag)</li>
  * <li>s (ssl) - use SSL/TLS for connection to the IDEA REST Server</li>
- * <li>eo (extraOpen) - the number of extra open questions to add to the rater form.</li>
+ * <li>eo (extraOpen) - the number of extra open qestions to add to the rater form.</li>
  * <li>es (extraScaled) - the number of extra scaled questions to add to the rater form.</li>
  * <li>d (discipline) - the discipline code this survey is associated with.</li>
  * <li>de (demographics) - the number of demographic sub-groups to use (0, 2-4 are valid).</li>
@@ -57,7 +57,10 @@ public class Main {
         LEARNING_ESSENTIALS('Learning Essentials', ['learn', 'learning'], 21, 23, true),
         TEACHING_ESSENTIALS('Teaching Essentials', ['teach', 'teaching'], 19, 20, true),
         ADMIN('Administrator', ['admin'], 17, 18, false),
-        CHAIR('Chair', [], 13, 14, false)
+        CHAIR('Chair', [], 13, 14, false),
+		ADVISOR('Advisor', [], 24, 25, false),
+		ADVISING_STAFF('Advising Staff', ['aa_staff'], 26, 27, false),
+		ADVISING_STUDENT('Advising Student', ['aa_student'], 26, 28, false)
 
         def name
         def aliases = []
@@ -406,6 +409,10 @@ public class Main {
 			title = 'Chair'
 		} else if(type == SURVEY_TYPE.ADMIN) {
 			title = 'Vice Provost'
+		} else if(type == SURVEY_TYPE.ADVISOR
+				|| type == SURVEY_TYPE.ADVISING_STAFF
+				|| type == SURVEY_TYPE.ADVISING_STUDENT) {
+			title = 'Advisor'
 		}
 
 		def restInfoForm = new RESTForm(id: type.infoFormID, numberAsked: 1, startDate: startDate, endDate: endDate,
