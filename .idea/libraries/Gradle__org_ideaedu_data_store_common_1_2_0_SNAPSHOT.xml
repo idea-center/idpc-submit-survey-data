@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Gradle: org.ideaedu:data-store-common:1.2.0-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/ideaedu/data-store-common/1.2.0-SNAPSHOT/data-store-common-1.2.0-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/idpc-submit-survey-data.iml" filepath="$PROJECT_DIR$/.idea/modules/idpc-submit-survey-data.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/idpc-submit-survey-data_main.iml" filepath="$PROJECT_DIR$/.idea/modules/idpc-submit-survey-data_main.iml" group="idpc-submit-survey-data" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/idpc-submit-survey-data_test.iml" filepath="$PROJECT_DIR$/.idea/modules/idpc-submit-survey-data_test.iml" group="idpc-submit-survey-data" />
+    </modules>
+  </component>
+</project>
