@@ -443,11 +443,24 @@ public class Main {
 
 		questionGroups?.each { questionGroup ->
 			questionGroup.questions?.each() { question ->
-				def answer = getRandomAnswer(question, questionGroup)
-                if(answer != null) {
-				    def response = new RESTResponse(groupType: 'standard', questionId: question.id, answer: answer)
-                    responses.add(response)
-                }
+				int numAnswers = 1
+
+				println "Question: $question.id, $question.type, $question.text"
+				if (question.type == 'multipleChoiceMultipleAnswer') {
+					def responseOptions = getResponseOptions(question, questionGroup)
+					if (responseOptions) {
+						numAnswers = random.nextInt(responseOptions.size)
+						println "multipleChoiceMultipleAnswer question detected, choosing $numAnswers responses"
+					}
+				}
+
+				numAnswers.times {
+					def answer = getRandomAnswer(question, questionGroup)
+					if (answer != null) {
+						def response = new RESTResponse(groupType: 'standard', questionId: question.id, answer: answer)
+						responses.add(response)
+					}
+				}
 			}
 		}
 
@@ -480,15 +493,24 @@ public class Main {
 		def answer
 
 		// Priority is given to question response options. If not defined, use the question group response options.
-		if(question.responseOptions) {
-            answer = getValue(question.responseOptions)
-		} else if(questionGroup.responseOptions) {
-            answer = getValue(questionGroup.responseOptions)
+		if(getResponseOptions(question, questionGroup)) {
+            answer = getValue(getResponseOptions(question, questionGroup))
 		} else {
 			answer = "Test Answer ${random.nextInt()}"
 		}
 
 		return answer
+	}
+
+	private static getResponseOptions(question, questionGroup) {
+		// Priority is given to question response options. If not defined, use the question group response options.
+		def responseOptions = question.responseOptions
+
+		if (!responseOptions) {
+			responseOptions = questionGroup.responseOptions
+		}
+
+		return responseOptions
 	}
 
     /**
