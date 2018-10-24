@@ -4,8 +4,14 @@ apply plugin: 'application'
 mainClassName = "org.ideaedu.Main"
 
 repositories {
-	mavenLocal()
-	mavenCentral()
+    mavenLocal()
+    maven {
+        url "${retriever_url}/libs-snapshot"
+    }
+    maven {
+        url "${retriever_url}/libs-release"
+    }
+    mavenCentral()
 }
 
 dependencies {
