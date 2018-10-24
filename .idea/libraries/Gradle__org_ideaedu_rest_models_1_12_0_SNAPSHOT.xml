@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Gradle: org.ideaedu:rest-models:1.12.0-SNAPSHOT">
-    <CLASSES>
-      <root url="jar://$MAVEN_REPOSITORY$/org/ideaedu/rest-models/1.12.0-SNAPSHOT/rest-models-1.12.0-SNAPSHOT.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
