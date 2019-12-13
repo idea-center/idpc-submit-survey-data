@@ -19,6 +19,8 @@ import groovyx.net.http.ContentType
 
 import groovy.json.JsonBuilder
 
+import groovy.time.*
+
 import java.util.Random
 
 /**
@@ -94,7 +96,7 @@ public class Main {
 	private static final int DEFAULT_INSTITUTION_ID = 3019 // ID_INSTITUTION in Combo for The IDEA Center
 	private static final String DEFAULT_HOSTNAME = 'localhost'
 	private static final int DEFAULT_PORT = 8091
-	private static final String DEFAULT_BASE_PATH = 'IDEA-REST-SERVER/v1/'
+	private static final String DEFAULT_BASE_PATH = 'v1/' //use v1/ for RDS
     private static final def DEFAULT_AUTH_HEADERS = [ 'X-IDEA-APPNAME': '', 'X-IDEA-KEY': '' ]
     private static final String DEFAULT_TYPE = SURVEY_TYPE.DIAGNOSTIC
     private static final String DEFAULT_PROTOCOL = 'http'
@@ -104,6 +106,7 @@ public class Main {
     private static final int DEFAULT_EXTRA_OPEN_QUESTION_COUNT = 0
     private static final int DEFAULT_DEMOGRAPHIC_GROUP_COUNT = 0
     private static final int DEFAULT_NUMBER_OF_RESPONDENTS = 10
+	private static final int DEFAULT_NUMBER_OF_SURVEYS = 1
 
     private static def protocol = DEFAULT_PROTOCOL
 	private static String hostname = DEFAULT_HOSTNAME
@@ -121,6 +124,7 @@ public class Main {
     private static int demographicGroupCount = DEFAULT_DEMOGRAPHIC_GROUP_COUNT
     private static int numAsked = DEFAULT_NUMBER_OF_RESPONDENTS
     private static int numAnswered = DEFAULT_NUMBER_OF_RESPONDENTS
+	private static int numSurveys = DEFAULT_NUMBER_OF_SURVEYS
 
 	private static boolean verboseOutput = false
 
@@ -135,7 +139,7 @@ public class Main {
 		 * 1) data file - contents define the answers to info form and rater form questions
 		 * 2) year, term, start/end date, gap analysis flag
 		 */
-		def cli = new CliBuilder( usage: 'Main -v -s -h host -p port -b basePath -sid srcID -sgid srcGroupID -iid instID -a "TestClient" -k "ABCDEFG123456" -t "diag" -d 5120 -es 1 -eo 1 -ras 10 -ran 9' )
+		def cli = new CliBuilder( usage: 'Main -v -s -h host -p port -b basePath -sid srcID -sgid srcGroupID -iid instID -a "TestClient" -k "ABCDEFG123456" -t "diag" -d 5120 -es 1 -eo 1 -ras 10 -ran 9 -sn 10' )
 		cli.with {
 			v longOpt: 'verbose', 'verbose output'
             s longOpt: 'ssl', 'use SSL (default: false)'
@@ -151,6 +155,7 @@ public class Main {
             d longOpt: 'discipline', 'discipline code', args: 1
             ras longOpt: 'asked', 'number of respondents asked to respond', args: 1
             ran longOpt: 'answered', 'number of respondents that responded', args: 1
+			sn longOpt: 'surveys', 'number of surveys', args: 1
             de longOpt: 'demographics', 'demographic groups', args: 1
             es longOpt: 'extraScaled', 'extra scaled questions', args: 1
             eo longOpt: 'extraOpen', 'extra open questions', args: 1
@@ -204,6 +209,9 @@ public class Main {
         if(options.ran) {
             numAnswered = options.ran.toInteger()
         }
+		if (options.sn) {
+			numSurveys = options.sn.toInteger()
+		}
         if(options.de) {
             demographicGroupCount = options.de.toInteger()
         }
@@ -246,12 +254,21 @@ public class Main {
 		}
         def restRaterForm = buildRESTRaterForm(raterFormStartDate, raterFormEndDate, numAsked, numAnswered,
           raterFormID, extraScaledQuestionCount, extraOpenQuestionCount, demographicGroups)
+		def start = new Date()
+		1.upto(numSurveys, {
+			def restSurvey = new RESTSurvey(srcId: srcID, srcGroupId: srcGroupID, institutionId: institutionID,
+					year: year, term: term, includesGapAnalysis: includesGapAnalysis, creationDate: creationDate,
+					infoForm: restInfoForm, raterForm: restRaterForm, course: course, demographicGroupIds: demographicGroupIDs)
+			submitSurveyData(restSurvey)
+			srcID++
+		})
+		def stop = new Date()
+		def duration = groovy.time.TimeCategory.minus(
+				stop,
+				start
+		)
 
-		def restSurvey = new RESTSurvey(srcId: srcID, srcGroupId: srcGroupID, institutionId: institutionID,
-			year: year, term: term, includesGapAnalysis: includesGapAnalysis, creationDate: creationDate,
-			infoForm: restInfoForm, raterForm: restRaterForm, course: course, demographicGroupIds: demographicGroupIDs)
-
-		submitSurveyData(restSurvey)
+		println "Duration: $duration.hours:$duration.minutes:$duration.seconds"
 	}
 
 	/**
@@ -445,7 +462,7 @@ public class Main {
 			questionGroup.questions?.each() { question ->
 				int numAnswers = 1
 
-				println "Question: $question.id, $question.type, $question.text"
+				//println "Question: $question.id, $question.type, $question.text"
 				if (question.type == 'multipleChoiceMultipleAnswer') {
 					def responseOptions = getResponseOptions(question, questionGroup)
 					if (responseOptions) {
