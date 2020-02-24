@@ -255,20 +255,29 @@ public class Main {
         def restRaterForm = buildRESTRaterForm(raterFormStartDate, raterFormEndDate, numAsked, numAnswered,
           raterFormID, extraScaledQuestionCount, extraOpenQuestionCount, demographicGroups)
 		def start = new Date()
-		1.upto(numSurveys, {
-			def restSurvey = new RESTSurvey(srcId: srcID, srcGroupId: srcGroupID, institutionId: institutionID,
-					year: year, term: term, includesGapAnalysis: includesGapAnalysis, creationDate: creationDate,
-					infoForm: restInfoForm, raterForm: restRaterForm, course: course, demographicGroupIds: demographicGroupIDs)
-			submitSurveyData(restSurvey)
-			srcID++
-		})
-		def stop = new Date()
-		def duration = groovy.time.TimeCategory.minus(
-				stop,
-				start
-		)
 
-		println "Duration: $duration.hours:$duration.minutes:$duration.seconds"
+        if(numSurveys > 1) {
+            def index = 1
+    		1.upto(numSurveys, {
+    			def restSurvey = new RESTSurvey(srcId: "${srcGroupID}_${index.toString().padLeft(5, '0')}", srcGroupId: srcGroupID, institutionId: institutionID,
+    					year: year, term: term, includesGapAnalysis: includesGapAnalysis, creationDate: creationDate,
+    					infoForm: restInfoForm, raterForm: restRaterForm, course: course, demographicGroupIds: demographicGroupIDs)
+    			submitSurveyData(restSurvey)
+    			index++
+    		})
+    		def stop = new Date()
+    		def duration = groovy.time.TimeCategory.minus(
+    				stop,
+    				start
+    		)
+
+    		println "Duration: $duration.hours:$duration.minutes:$duration.seconds"
+        } else {
+            def restSurvey = new RESTSurvey(srcId: srcID, srcGroupId: srcGroupID, institutionId: institutionID,
+                    year: year, term: term, includesGapAnalysis: includesGapAnalysis, creationDate: creationDate,
+                    infoForm: restInfoForm, raterForm: restRaterForm, course: course, demographicGroupIds: demographicGroupIDs)
+            submitSurveyData(restSurvey)
+        }
 	}
 
 	/**
