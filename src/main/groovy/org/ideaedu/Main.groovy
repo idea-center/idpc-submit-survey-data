@@ -41,7 +41,7 @@ import java.util.Random
  * <li>s (ssl) - use SSL/TLS for connection to the IDEA REST Server</li>
  * <li>eo (extraOpen) - the number of extra open qestions to add to the rater form.</li>
  * <li>es (extraScaled) - the number of extra scaled questions to add to the rater form.</li>
- * <li>d (discipline) - the discipline code this survey is associated with.</li>
+ * <li>c (cip) - the program code this survey is associated with.</li>
  * <li>de (demographics) - the number of demographic sub-groups to use (0, 2-4 are valid).</li>
  * <li>ras (asked) - the number of respondents asked to respond (defaults to 10).</li>
  * <li>ran (answered) - the number of respondents that answered questions (defaults to 10).</li>
@@ -100,7 +100,6 @@ public class Main {
     private static final def DEFAULT_AUTH_HEADERS = [ 'X-IDEA-APPNAME': '', 'X-IDEA-KEY': '' ]
     private static final String DEFAULT_TYPE = SURVEY_TYPE.DIAGNOSTIC
     private static final String DEFAULT_PROTOCOL = 'http'
-    private static final Integer DEFAULT_DISCIPLINE_CODE = new Integer(5120)
     private static final String DEFAULT_PROGRAM_CODE = "51.2001"
     private static final int DEFAULT_EXTRA_SCALED_QUESTION_COUNT = 0
     private static final int DEFAULT_EXTRA_OPEN_QUESTION_COUNT = 0
@@ -117,8 +116,7 @@ public class Main {
 	private static int institutionID = DEFAULT_INSTITUTION_ID
 	private static def authHeaders = DEFAULT_AUTH_HEADERS
 	private static def type = DEFAULT_TYPE
-    private static def disciplineCode = DEFAULT_DISCIPLINE_CODE
-    private static def programCode = DEFAULT_PROGRAM_CODE
+    private static def cipCode = DEFAULT_PROGRAM_CODE
     private static def extraScaledQuestionCount = DEFAULT_EXTRA_SCALED_QUESTION_COUNT
     private static def extraOpenQuestionCount = DEFAULT_EXTRA_OPEN_QUESTION_COUNT
     private static int demographicGroupCount = DEFAULT_DEMOGRAPHIC_GROUP_COUNT
@@ -152,7 +150,7 @@ public class Main {
 			a longOpt: 'app', 'client application name', args: 1
 			k longOpt: 'key', 'client application key', args: 1
 			t longOpt: 'type', 'survey type', args: 1
-            d longOpt: 'discipline', 'discipline code', args: 1
+            c longOpt: 'cip', 'cip code', args: 1
             ras longOpt: 'asked', 'number of respondents asked to respond', args: 1
             ran longOpt: 'answered', 'number of respondents that responded', args: 1
 			sn longOpt: 'surveys', 'number of surveys', args: 1
@@ -199,8 +197,8 @@ public class Main {
 		if(options.t) {
             type = SURVEY_TYPE.get(options.t)
 		}
-        if(options.d) {
-            disciplineCode = options.d.toInteger()
+        if(options.c) {
+            cipCode = options.c
         }
         if(options.ras) {
             numAsked = options.ras.toInteger()
@@ -239,7 +237,7 @@ public class Main {
 		def infoFormID = type.infoFormID
 		def raterFormID = type.raterFormID
 
-        def programCode = getProgramCode(disciplineCode)
+        def programCode = cipCode
 
         def demographicGroups = getDemographicGroups(demographicGroupCount)
         def demographicGroupIDs
@@ -247,7 +245,7 @@ public class Main {
             demographicGroupIDs = demographicGroups.collect { it.id }
         }
 
-		def restInfoForm = buildRESTInfoForm(infoFormStartDate, infoFormEndDate, type, type.isSRI? disciplineCode:null, type.isSRI? programCode:null)
+		def restInfoForm = buildRESTInfoForm(infoFormStartDate, infoFormEndDate, type, null, type.isSRI? programCode:null)
 		def course
 		if(type.isSRI) {
 			course = buildRESTCourse(courseStartDate? new LocalDate(courseStartDate):null, courseEndDate? new LocalDate(courseEndDate):null)
@@ -416,7 +414,7 @@ public class Main {
 	 * @return RESTForm A new RESTForm instance that is populated with test data.
 	 */
 	private static buildRESTInfoForm(startDate, endDate, type,
-        disciplineCode=DEFAULT_DISCIPLINE_CODE, programCode=DEFAULT_PROGRAM_CODE) {
+        disciplineCode, programCode=DEFAULT_PROGRAM_CODE) {
 
 		def questionGroups = getQuestionGroups(type.infoFormID)
 
@@ -603,12 +601,15 @@ public class Main {
 	}
 
     /**
+	 * BASE-442: This is no longer used
+	 *
      * Get a program code that matches the given discipline code. This will grab the first one
      * if there is more than one returned.
      *
      * @param disciplineCode The discipline code to use when searching for the program code.
      * @return A program code that matches the given discipline code. This might be null.
      */
+	@Deprecated
     private static getProgramCode(disciplineCode) {
         def programCode
 

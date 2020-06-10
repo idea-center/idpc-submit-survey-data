@@ -61,7 +61,7 @@ iid   | institutionID    | No       | 3019                | The institution ID t
 a     | app              | Yes      | None                | The application to connect as (credentials).
 k     | key              | Yes      | None                | The key to use (credentials).
 t     | type             | No       | Diagnostic          | The type of survey to submit data for. This can be any valid type (diag, Diagnostic, Short, Diagnostic 2016, diag16, Learning Essentials, learn, learning, Teaching Essentials, teach, teaching, Administrator, admin, Chair).
-d     | discipline       | No       | 5120                | The discipline the data is associated with.
+c     | cip              | No       | 01.99               | The cip the data is associated with.
 de    | demographics     | No       |                     | The number of demographic groups to select for use in the Administrator survey.
 es    | extraScaled      | No       | 0                   | The number of extra scaled questions to add (and answer).
 eo    | extraOpen        | No       | 0                   | The number of extra open questions to add (and answer).
