@@ -11,17 +11,35 @@ import idea.data.rest.RESTRespondent
 import idea.data.rest.RESTSurvey
 import idea.data.rest.RESTSubGroup
 
+import org.apache.hc.client5.http.ClientProtocolException
+import org.apache.hc.client5.http.classic.methods.HttpGet
+import org.apache.hc.client5.http.classic.methods.HttpPost
+import org.apache.hc.client5.http.impl.classic.HttpClients
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder
+import org.apache.hc.client5.http.ssl.TrustSelfSignedStrategy
+import org.apache.hc.core5.http.ClassicHttpResponse
+import org.apache.hc.core5.http.ContentType
+import org.apache.hc.core5.http.HttpStatus
+import org.apache.hc.core5.http.ParseException
+import org.apache.hc.core5.http.io.HttpClientResponseHandler
+import org.apache.hc.core5.http.io.entity.EntityUtils
+import org.apache.hc.core5.http.io.entity.StringEntity
+import org.apache.hc.core5.http.message.BasicHeader
+import org.apache.hc.core5.http.ssl.TLS
+import org.apache.hc.core5.ssl.SSLContextBuilder
+import org.apache.hc.core5.ssl.SSLContexts
+
+import org.apache.commons.cli.DefaultParser
+import org.apache.commons.cli.Option
+import org.apache.commons.cli.Options
+import org.apache.commons.cli.HelpFormatter
+
 import org.joda.time.LocalDate
-import java.util.*
 
-import groovyx.net.http.RESTClient
-import groovyx.net.http.ContentType
-
+import groovy.json.JsonSlurper
 import groovy.json.JsonBuilder
-
-import groovy.time.*
-
-import java.util.Random
 
 /**
  * The Main class provides a way to test the diagnostic survey/report by generating test data and submitting it to
@@ -96,9 +114,9 @@ public class Main {
 	private static final int DEFAULT_INSTITUTION_ID = 3019 // ID_INSTITUTION in Combo for The IDEA Center
 	private static final String DEFAULT_HOSTNAME = 'localhost'
 	private static final int DEFAULT_PORT = 8091
-	private static final String DEFAULT_BASE_PATH = 'v1/' //use v1/ for RDS
+	private static final String DEFAULT_BASE_PATH = 'v1'
     private static final def DEFAULT_AUTH_HEADERS = [ 'X-IDEA-APPNAME': '', 'X-IDEA-KEY': '' ]
-    private static final String DEFAULT_TYPE = SURVEY_TYPE.DIAGNOSTIC
+    private static final SURVEY_TYPE DEFAULT_TYPE = SURVEY_TYPE.TEACHING_ESSENTIALS
     private static final String DEFAULT_PROTOCOL = 'http'
     private static final String DEFAULT_PROGRAM_CODE = "51.2001"
     private static final int DEFAULT_EXTRA_SCALED_QUESTION_COUNT = 0
@@ -126,8 +144,6 @@ public class Main {
 
 	private static boolean verboseOutput = false
 
-	private static RESTClient restClient
-
 	private static Random random = new Random() // TODO Should we seed it? -todd 11Jun2013
 
 	static void main(String[] args) {
@@ -137,87 +153,94 @@ public class Main {
 		 * 1) data file - contents define the answers to info form and rater form questions
 		 * 2) year, term, start/end date, gap analysis flag
 		 */
-		def cli = new CliBuilder( usage: 'Main -v -s -h host -p port -b basePath -sid srcID -sgid srcGroupID -iid instID -a "TestClient" -k "ABCDEFG123456" -t "diag" -d 5120 -es 1 -eo 1 -ras 10 -ran 9 -sn 10' )
-		cli.with {
-			v longOpt: 'verbose', 'verbose output'
-            s longOpt: 'ssl', 'use SSL (default: false)'
-			h longOpt: 'host', 'host name (default: localhost)', args: 1
-			p longOpt: 'port', 'port number (default: 8091)', args: 1
-			b longOpt: 'basePath', 'base REST path (default: IDEA-REST-SERVER/v1/', args: 1
-			sid longOpt: 'srcID', 'source ID', args: 1
-			sgid longOpt: 'srcGroupID', 'source Group ID', args: 1
-			iid longOpt: 'institutionID', 'institution ID', args: 1
-			a longOpt: 'app', 'client application name', args: 1
-			k longOpt: 'key', 'client application key', args: 1
-			t longOpt: 'type', 'survey type', args: 1
-            c longOpt: 'cip', 'cip code', args: 1
-            ras longOpt: 'asked', 'number of respondents asked to respond', args: 1
-            ran longOpt: 'answered', 'number of respondents that responded', args: 1
-			sn longOpt: 'surveys', 'number of surveys', args: 1
-            de longOpt: 'demographics', 'demographic groups', args: 1
-            es longOpt: 'extraScaled', 'extra scaled questions', args: 1
-            eo longOpt: 'extraOpen', 'extra open questions', args: 1
-			'?' longOpt: 'help', 'help'
-		}
-		def options = cli.parse(args)
-		if(options.'?') {
-			cli.usage()
+        def parser = new DefaultParser()
+        def options = new Options()
+        options.addOption(new Option('v', 'verbose', false, 'verbose output'))
+        options.addOption(new Option('s', 'ssl', false, 'use SSL (default: false)'))
+        options.addOption(new Option('h', 'host', true, 'host name (default: localhost)'))
+        options.addOption(new Option('p', 'port', true, 'port number (default: 8091)'))
+        options.addOption(new Option('b', 'basePath', true, 'base REST path (default: v1'))
+        options.addOption(new Option('sid', 'srcID', true, 'source ID'))
+        options.addOption(new Option('sgid', 'srcGroupID', true, 'source Group ID'))
+        options.addOption(new Option('iid', 'institutionID', true, 'institution ID'))
+        options.addOption(new Option('a', 'app', true, 'client application name'))
+        options.addOption(new Option('k', 'key', true, 'client application key'))
+        options.addOption(new Option('t', 'type', true, 'survey type'))
+        options.addOption(new Option('c', 'cip', true, 'cip code'))
+        options.addOption(new Option('ras', 'asked', true, 'number of respondents asked to respond'))
+        options.addOption(new Option('ran', 'answered', true, 'number of respondents that responded'))
+        options.addOption(new Option('sn', 'surveys', true, 'number of surveys'))
+        options.addOption(new Option('de', 'demographics', true, 'demographic groups'))
+        options.addOption(new Option('es', 'extraScaled', true, 'extra scaled questions'))
+        options.addOption(new Option('eo', 'extraOpen', true, 'extra open questions'))
+        options.addOption(new Option('?', 'help', false, 'help'))
+        def cmd = parser.parse(options, args)
+
+		if(cmd.hasOption('?')) {
+			def formatter = new HelpFormatter()
+            formatter.printHelp('idpc-submit-survey-data', options)
 			return
 		}
-		if(options.v) {
+		if(cmd.hasOption('v')) {
 			verboseOutput = true
 		}
-        if(options.s) {
+        if(cmd.hasOption('s')) {
             protocol = 'https'
         }
-		if(options.h) {
-			hostname = options.h
+		if(cmd.hasOption('h')) {
+			hostname = cmd.getOptionValue('h')
 		}
-		if(options.p) {
-			port = options.p.toInteger()
+		if(cmd.hasOption('p')){
+			port = cmd.getOptionValue('p').toInteger()
 		}
-		if(options.b) {
-			basePath = options.b
+		if(cmd.hasOption('b')) {
+			basePath = cmd.getOptionValue('b')
 		}
-		if(options.sid) {
-			srcID = options.sid
+		if(cmd.hasOption('sid')) {
+			srcID = cmd.getOptionValue('sid')
 		}
-		if(options.sgid) {
-			srcGroupID = options.sgid
+		if(cmd.hasOption('sgid')) {
+			srcGroupID = cmd.getOptionValue('sgid')
 		}
-		if(options.iid) {
-			institutionID = options.iid.toInteger()
+		if(cmd.hasOption('iid')) {
+			institutionID = cmd.getOptionValue('iid').toInteger()
 		}
-		if(options.a) {
-			authHeaders['X-IDEA-APPNAME'] = options.a
+		if(cmd.hasOption('a')) {
+			authHeaders['X-IDEA-APPNAME'] = cmd.getOptionValue('a')
 		}
-		if(options.k) {
-			authHeaders['X-IDEA-KEY'] = options.k
+		if(cmd.hasOption('k')) {
+			authHeaders['X-IDEA-KEY'] = cmd.getOptionValue('k')
 		}
-		if(options.t) {
-            type = SURVEY_TYPE.get(options.t)
+		if(cmd.hasOption('t')) {
+            def typeString = cmd.getOptionValue('t')
+            println "Options have type specified: ${typeString}"
+            type = SURVEY_TYPE.get(typeString)
+            if(!type) {
+                println "Unable to find an instrument type with that name: ${typeString}"
+                return
+            }
 		}
-        if(options.c) {
-            cipCode = options.c
+        if(cmd.hasOption('c')) {
+            cipCode = cmd.getOptionValue('c')
         }
-        if(options.ras) {
-            numAsked = options.ras.toInteger()
+        if(cmd.hasOption('ras')) {
+            numAsked = cmd.getOptionValue('ras').toInteger()
             numAnswered = numAsked // default 100% response rate
         }
-        if(options.ran) {
-            numAnswered = options.ran.toInteger()
+        if(cmd.hasOption('ran')) {
+            numAnswered = cmd.getOptionValue('ran').toInteger()
         }
-		if (options.sn) {
-			numSurveys = options.sn.toInteger()
+		if (cmd.hasOption('sn')) {
+			numSurveys = cmd.getOptionValue('sn').toInteger()
 		}
-        if(options.de) {
-            demographicGroupCount = options.de.toInteger()
+        if(cmd.hasOption('de')) {
+            demographicGroupCount = cmd.getOptionValue('de').toInteger()
         }
-        if(options.es) {
-            extraScaledQuestionCount = options.es.toInteger()
+        if(cmd.hasOption('es')) {
+            extraScaledQuestionCount = cmd.getOptionValue('es').toInteger()
         }
-        if(options.eo) {
-            extraOpenQuestionCount = options.eo.toInteger()
+        if(cmd.hasOption('eo')) {
+            extraOpenQuestionCount = cmd.getOptionValue('eo').toInteger()
         }
 
 		int year = Calendar.instance.get(Calendar.YEAR)
@@ -234,9 +257,6 @@ public class Main {
 		Date courseStartDate = today - 60
 		Date courseEndDate = today -30
 
-		def infoFormID = type.infoFormID
-		def raterFormID = type.raterFormID
-
         def programCode = cipCode
 
         def demographicGroups = getDemographicGroups(demographicGroupCount)
@@ -245,13 +265,13 @@ public class Main {
             demographicGroupIDs = demographicGroups.collect { it.id }
         }
 
-		def restInfoForm = buildRESTInfoForm(infoFormStartDate, infoFormEndDate, type, null, type.isSRI? programCode:null)
+		def restInfoForm = buildRESTInfoForm(infoFormStartDate, infoFormEndDate, type, null, (type.isSRI ? programCode : null))
 		def course
 		if(type.isSRI) {
 			course = buildRESTCourse(courseStartDate? new LocalDate(courseStartDate):null, courseEndDate? new LocalDate(courseEndDate):null)
 		}
         def restRaterForm = buildRESTRaterForm(raterFormStartDate, raterFormEndDate, numAsked, numAnswered,
-          raterFormID, extraScaledQuestionCount, extraOpenQuestionCount, demographicGroups)
+          type.raterFormID, extraScaledQuestionCount, extraOpenQuestionCount, demographicGroups)
 		def start = new Date()
 
         if(numSurveys > 1) {
@@ -577,15 +597,13 @@ public class Main {
 	private static getQuestionGroups(formID) {
 		def questionGroups = []
 
-		def client = getRESTClient()
 		if(verboseOutput) {
             println "Retrieving questions for form ${formID}..."
         }
-		def r = client.get(
-                path: "${basePath}/forms/${formID}/questions",
-                headers: authHeaders)
 
-		r.data.data.each { qg ->
+        def resultString = getData("forms/${formID}/questions")
+        def json = new JsonSlurper().parseText(resultString)
+		json?.data?.each { qg ->
 			// TODO Is there a better way to convert it from the Map (qg) to RESTQuestionGroup? -todd 11Jun2013
 			def jsonBuilder = new JsonBuilder(qg)
 			def qgJSON = jsonBuilder.toString()
@@ -614,17 +632,13 @@ public class Main {
         def programCode
 
         if(disciplineCode) {
-            def client = getRESTClient()
             if(verboseOutput) {
                 println "Retrieving a program code for discipline code ${disciplineCode}..."
             }
 
-            def r = client.get(
-                path: "${basePath}/cip",
-                query: [discipline_code: disciplineCode],
-                headers: authHeaders)
-
-            programCode = r?.data?.data?.first().cip_code
+            def resultString = getData("cip?discipline_code=${disciplineCode}")
+            def json = new JsonSlurper().parseText(resultString)
+            programCode = json?.data?.first().cip_code
 
             if(verboseOutput) {
                 println "Got a program code for discipline code ${disciplineCode}: ${programCode}"
@@ -646,14 +660,13 @@ public class Main {
             }
 
             // Get all demographic subgroups from the API
-            def r = client.get(
-                path: "${basePath}/demographic_groups",
-                headers: authHeaders)
+            def resultString = getData("demographic_groups")
+            def json = new JsonSlurper().parseText(resultString)
             def subGroups = []
-            r?.data?.data.each { it ->
+            json?.data?.each { it ->
                 def jsonBuilder = new JsonBuilder(it)
-                def json = jsonBuilder.toString()
-                subGroups << RESTSubGroup.fromJSON(json)
+                def subGroupJSON = jsonBuilder.toString()
+                subGroups << RESTSubGroup.fromJSON(subGroupJSON)
             }
 
             // Select some of them at random
@@ -681,15 +694,11 @@ public class Main {
 		if(verboseOutput) {
             println "JSON: ${json}"
         }
-		def client = getRESTClient()
+
 		try {
             def startTime = new Date().time
 
-			def response = client.post(
-				path: "${basePath}/services/survey",
-				body: json,
-				requestContentType: ContentType.JSON,
-				headers: authHeaders)
+            def response = postData("services/survey", json)
 
             def endTime = new Date().time
             def runTime = endTime - startTime
@@ -707,26 +716,131 @@ public class Main {
 		}
 	}
 
-	/**
-	 * Get an instance of the RESTClient that can be used to access the REST API.
-	 *
-	 * @return RESTClient An instance that can be used to access the REST API.
-	 */
-	private static getRESTClient() {
-		if(restClient == null) {
-			if(verboseOutput) {
-                println "REST requests will be sent to ${hostname} on port ${port} (protocol: ${protocol})"
-            }
-			restClient = new RESTClient("${protocol}://${hostname}:${port}/")
-            restClient.ignoreSSLIssues()
-            restClient.handler.failure = { response ->
-                if(verboseOutput) {
-                    println "The REST call failed: ${response.status}"
-                }
-                return response
-            }
-		}
+    /**
+     * Perform an HTTP GET using the given path and return the response.
+     *
+     * @param path The relative path for the request; this is combined with the configured hostname, port, etc..
+     * @return The result from the HTTP GET request in the form of a String.
+     */
+    private static getData(path) {
 
-		return restClient
-	}
+        def result // TODO: Set this to some reasonable default
+
+        if(path) {
+            def fullPath = "${protocol}://${hostname}:${port}/${basePath}/${path}"
+            if(verboseOutput) {
+                println "Making a REST call on GET ${fullPath}"
+            }
+
+            def defaultHeaders = [
+                new BasicHeader("X-IDEA-APPNAME", authHeaders['X-IDEA-APPNAME']),
+                new BasicHeader("X-IDEA-KEY", authHeaders['X-IDEA-KEY'])
+            ]
+
+            def sslcontext = SSLContexts.custom()
+                .loadTrustMaterial(null, new TrustSelfSignedStrategy())
+                .build()
+            def sslSocketFactory = SSLConnectionSocketFactoryBuilder.create()
+                .setSslContext(sslcontext)
+                .setTlsVersions(TLS.V_1_2)
+                .build()
+            def connectionMgr = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(sslSocketFactory)
+                .build()
+            try (def httpclient = HttpClients.custom().setConnectionManager(connectionMgr).setDefaultHeaders(defaultHeaders).build()) {
+                def httpGet = new HttpGet(fullPath)
+
+                def responseHandler = new HttpClientResponseHandler<String>() {
+                    @Override
+                    public String handleResponse(final ClassicHttpResponse response) throws IOException {
+                        def status = response.getCode()
+                        if (status >= HttpStatus.SC_SUCCESS && status < HttpStatus.SC_REDIRECTION) {
+                            def entity = response.getEntity()
+
+                            try {
+                                return entity != null ? EntityUtils.toString(entity) : null
+                            } catch (final ParseException ex) {
+                                throw new ClientProtocolException(ex)
+                            }
+                        } else {
+                            throw new ClientProtocolException("Unexpected response status: ${status}")
+                        }                        
+                    }
+                }
+
+                result = httpclient.execute(httpGet, responseHandler)
+            }
+
+            if(verboseOutput) {
+                println "Completed a REST call to GET ${fullPath}"
+            }
+        }
+
+        return result
+    }
+
+    /**
+     * Perform an HTTP POST using the given path and body and return the response.
+     *
+     * @param path The relative path for the request; this is combined with the configured hostname, port, etc..
+     * @param body The body to submit in the HTTP POST.
+     * @return The result from the HTTP POST request in the form of a String.
+     */
+    private static postData(path, body) {
+        def result
+
+        if(path) {
+            def fullPath = "${protocol}://${hostname}:${port}/${basePath}/${path}"
+            if(verboseOutput) {
+                println "Making a REST call on POST ${fullPath}"
+            }
+
+            def defaultHeaders = [
+                new BasicHeader("X-IDEA-APPNAME", authHeaders['X-IDEA-APPNAME']),
+                new BasicHeader("X-IDEA-KEY", authHeaders['X-IDEA-KEY'])
+            ]
+
+            def sslcontext = SSLContexts.custom()
+                .loadTrustMaterial(null, new TrustSelfSignedStrategy())
+                .build()
+            def sslSocketFactory = SSLConnectionSocketFactoryBuilder.create()
+                .setSslContext(sslcontext)
+                .setTlsVersions(TLS.V_1_2)
+                .build()
+            def connectionMgr = PoolingHttpClientConnectionManagerBuilder.create()
+                .setSSLSocketFactory(sslSocketFactory)
+                .build()
+            try (def httpclient = HttpClients.custom().setConnectionManager(connectionMgr).setDefaultHeaders(defaultHeaders).build()) {
+                def httpPost = new HttpPost(fullPath)
+                def bodyEntity = new StringEntity(body, ContentType.APPLICATION_JSON)
+                httpPost.setEntity(bodyEntity)
+
+                def responseHandler = new HttpClientResponseHandler<String>() {
+                    @Override
+                    public String handleResponse(final ClassicHttpResponse response) throws IOException {
+                        def status = response.getCode()
+                        if (status >= HttpStatus.SC_SUCCESS && status < HttpStatus.SC_REDIRECTION) {
+                            def entity = response.getEntity()
+
+                            try {
+                                return entity != null ? EntityUtils.toString(entity) : null
+                            } catch (final ParseException ex) {
+                                throw new ClientProtocolException(ex)
+                            }
+                        } else {
+                            throw new ClientProtocolException("Unexpected response status: ${status}")
+                        }                        
+                    }
+                }
+
+                result = httpclient.execute(httpPost, responseHandler)
+            }
+
+            if(verboseOutput) {
+                println "Completed a REST call to POST ${fullPath}"
+            }
+        }
+
+        return result
+    }
 }

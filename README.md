@@ -1,7 +1,7 @@
-# IDEA Data Portal CLI - Submit Survey Data
+# Anthology Course Evaluations with IDEA Data Portal CLI - Submit Survey Data
 
-This utility provides an example of how to submit survey data to the IDEA Data Portal using the API. It is a Groovy-based application
-that uses Gradle as the build tool.
+This utility provides an example of how to submit survey data to the Anthology Course Evaluations
+with IDEA Data Portal using the API. It is a Groovy-based application that uses Gradle as the build tool.
 
 ## Building
 
@@ -13,7 +13,27 @@ Once Gradle is setup, you can run the following to get the dependencies download
 gradle build
 ```
 
+### Running Tests
+
+There are currently NO tests in this project.
+
+### Running Snyk
+
+There is a gradle plugin that provides access to the Snyk tooling. To run this, be sure to get your credentials (personal token)
+from Snyk (through the Web UI) and store it in your personal gradle.properties file (usually in `~/.gradle/gradle.properties`).
+
+Once that token is setup, you can run:
+```
+gradle snyk-test
+```
+
+to see what issues there are in the code base.
+
+It is also possible to change the Snyk severity configuration on the command line or in the gradle.properties file in the root
+of this project.
+
 ### Project Dependencies
+
 This project is implemented with Groovy and uses Gradle as the build tool. Therefore, you need to be sure to install
 the following:
 * [Git](http://git-scm.com/downloads)
@@ -21,7 +41,7 @@ the following:
 * [Groovy](http://groovy-lang.org/)
 * [Gradle](http://gradle.org/installation) (or use [SDKMAN](http://sdkman.io/) to install Gradle)
 * Libraries Used
-  * [HTTP Client Framework for Groovy](http://mvnrepository.com/artifact/org.codehaus.groovy.modules.http-builder/http-builder)
+  * [Apache HttpComponents](https://hc.apache.org/index.html)
   * [Apache Commons CLI](http://mvnrepository.com/artifact/commons-cli/commons-cli)
   * [Google GSON](http://mvnrepository.com/artifact/com.google.code.gson/gson)
   * IDEA REST Models (org.ideaedu:rest-models)
@@ -54,7 +74,7 @@ v     | verbose          | No       | Off                 | Provide verbose outp
 s     | ssl              | No       | Off                 | Connect via SSL
 h     | host             | No       | localhost           | The host that provides the Data Portal API
 p     | port             | No       | 8091                | The port on the host that is listening for requests.
-b     | basePath         | No       | IDEA-REST-SERVER/v1 | The path on the host.
+b     | basePath         | No       | v1                  | The path on the host.
 sid   | srcID            | No       | 1                   | The source survey ID.
 sgid  | srcGroupID       | No       | 2                   | The source group ID.
 iid   | institutionID    | No       | 3019                | The institution ID the data is associated with.
@@ -67,3 +87,15 @@ es    | extraScaled      | No       | 0                   | The number of extra 
 eo    | extraOpen        | No       | 0                   | The number of extra open questions to add (and answer).
 ras   | num asked        | No       | 10                  | The number of respondents asked to respond.  Useful with -de (demographics) to make sure there are enough respondents in each demographic group.
 ran   | num answered     | No       | 10                  | The number of respondents that answered questions.  Useful with -de (demographics) to make sure there are enough respondents in each demographic group.
+
+## Action Items
+
+* Test against localhost to make sure it will submit properly
+* Add other static code analysis tasks to the Gradle build
+* Update the package name: com.anthology.cei
+* Update the docs to make it easy to checkout, build, and run
+* Refactor so it no longer needs the REST Models project
+* Add gradle wrapper to the project so it no longer needs to be installed
+* Remove gradle.properties since we no longer use a remote artifact repo for REST Models
+* Add automated tests
+* Refactor the code so it no longer lives in a single file (Main.groovy)
