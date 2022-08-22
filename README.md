@@ -95,7 +95,5 @@ ran   | num answered     | No       | 10                  | The number of respon
 * Update the package name: com.anthology.cei
 * Update the docs to make it easy to checkout, build, and run
 * Refactor so it no longer needs the REST Models project
-* Add gradle wrapper to the project so it no longer needs to be installed
-* Remove gradle.properties since we no longer use a remote artifact repo for REST Models
 * Add automated tests
 * Refactor the code so it no longer lives in a single file (Main.groovy)
