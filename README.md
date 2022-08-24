@@ -96,4 +96,3 @@ ran   | num answered     | No       | 10                  | The number of respon
 * Update the docs to make it easy to checkout, build, and run
 * Refactor so it no longer needs the REST Models project
 * Add automated tests
-* Refactor the code so it no longer lives in a single file (Main.groovy)
