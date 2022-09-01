@@ -91,7 +91,6 @@ ran   | num answered     | No       | 10                  | The number of respon
 ## Action Items
 
 * Test against localhost to make sure it will submit properly
-* Add other static code analysis tasks to the Gradle build
 * Update the package name: com.anthology.cei
 * Update the docs to make it easy to checkout, build, and run
 * Refactor so it no longer needs the REST Models project

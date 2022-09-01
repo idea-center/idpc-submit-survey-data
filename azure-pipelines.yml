@@ -1,0 +1,58 @@
+# idpc-submit-survey-data Build and Publish
+
+name: $(Build.DefinitionName)-$(SourceBranchName)-$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  displayName: Build, Test, and Analyze
+  jobs:
+  - job: BuildJob
+    steps:
+    - task: Gradle@2
+      displayName: Build
+      env:
+        SYSTEM_USER: 'campuslabs'
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        SNYK_TOKEN: $(SNYK_TOKEN)
+      inputs:
+        workingDirectory: ''
+        gradleWrapperFile: 'gradlew'
+        gradleOptions: '-Xmx3072m'
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.11'
+        jdkArchitectureOption: 'x64'
+        tasks: 'check'
+
+- stage: Release
+  displayName: Release Artifacts
+  jobs:
+  - job: ReleaseJob
+    steps:
+    - task: Gradle@2
+      displayName: Create Release Artifact
+      env:
+        SYSTEM_USER: 'campuslabs'
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        SNYK_TOKEN: $(SNYK_TOKEN)
+      inputs:
+        workingDirectory: ''
+        gradleWrapperFile: 'gradlew'
+        gradleOptions: '-Xmx3072m'
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.11'
+        jdkArchitectureOption: 'x64'
+        tasks: 'distZip distTar'
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Release Artifact
+      inputs:
+        path: 'build/distributions/'
+        artifactType: pipeline
+        artifactName: 'idpc-submit-survey-data-dist'
