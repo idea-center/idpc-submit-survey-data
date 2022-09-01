@@ -95,3 +95,4 @@ ran   | num answered     | No       | 10                  | The number of respon
 * Update the docs to make it easy to checkout, build, and run
 * Refactor so it no longer needs the REST Models project
 * Add automated tests
+* Make sure README command line options are up-to-date with code
