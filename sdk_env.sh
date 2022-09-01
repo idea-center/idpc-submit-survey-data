@@ -10,8 +10,8 @@
 # source ./sdk_env.sh
 
 JAVA_VERSION='11.0.14-zulu'
-GROOVY_VERSION='3.0.7'
-GRADLE_VERSION='7.2'
+GROOVY_VERSION='4.0.4'
+GRADLE_VERSION='7.5.1'
 
 # Setup the Java home on Mac OS X
 sdk use java ${JAVA_VERSION}
