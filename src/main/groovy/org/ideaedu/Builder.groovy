@@ -226,7 +226,7 @@ public class Builder {
                 if (question.type == 'multipleChoiceMultipleAnswer') {
                     def responseOptions = getResponseOptions(question, questionGroup)
                     if (responseOptions) {
-                        numAnswers = random.nextInt(responseOptions.size)
+                        numAnswers = random.nextInt(responseOptions.size())
                         println "multipleChoiceMultipleAnswer question detected, choosing ${numAnswers} responses"
                     }
                 }
@@ -301,7 +301,7 @@ public class Builder {
         def value
 
         if(responseOptions) {
-            def index = random.nextInt(responseOptions.size)
+            def index = random.nextInt(responseOptions.size())
             if(index > 0) {
                 value = responseOptions[index].value
             } else if(responseOptions[index].isExcluded && random.nextBoolean()) {

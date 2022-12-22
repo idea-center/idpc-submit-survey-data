@@ -81,7 +81,7 @@ public class DataPortal {
         }
 
         if(verboseOutput) {
-            println "Retrieved ${questionGroups.size} question groups for form ${formID}."
+            println "Retrieved ${questionGroups.size()} question groups for form ${formID}."
         }
 
         return questionGroups
